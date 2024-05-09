@@ -113,12 +113,14 @@ def normalizar(v):
 
 def calcularRanking(M, p):
     npages = M.shape[0]
-    rnk = np.arange(0, npages) # ind{k] = i, la pagina k tienen el iesimo orden en la lista.
-    scr = np.zeros(npages) # scr[k] = alpha, la pagina k tiene un score de alpha 
+    rnk = np.arange(0, npages) 
+    scr = np.zeros(npages) 
+
     D = armar_matriz_diagonal(M)
     R = M @ D
     I = np.eye(npages)
     e = np.ones((npages,))
+    
     scr = normalizar(resolverLU(I - p*R, e))
     scr = scr/scr.sum(keepdims=1)
     rnk = np.flip(np.argsort(scr)) + 1
