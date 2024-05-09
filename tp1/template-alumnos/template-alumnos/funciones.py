@@ -38,6 +38,16 @@ def dibujarGrafo(W, print_ejes=True):
     nx.draw(G, pos=nx.spring_layout(G), **options)
 
 def descompLU(A):
+    """
+    Realiza la descomposición LU de una matriz
+
+    Parámetros:
+        A: Matriz cuadrada de tamaño nxn.
+
+    Devuelve:
+        L: Matriz triangular inferior
+        U: Matriz triangular superior
+    """
     m=A.shape[0]
     n=A.shape[1]
     Ac = A.copy()
@@ -74,19 +84,28 @@ def resolverLU(A, b):
     return x
 
 def armar_matriz_diagonal(matriz_conectividad):
-  n = np.shape(matriz_conectividad)[0]
-  matriz_diagonal = np.zeros((n,n))
+    """
+    Arma la matriz D diagonal con los grados de la matriz de conectividad
 
-  c = matriz_conectividad.sum(axis=0)
+    Parámetros:
+        matriz_conectividad: Matriz de unos y ceros con diagonal de ceros
 
-  for j in range(n):
-    if c[j] != 0:
-      matriz_diagonal[j, j] = 1/c[j]
-    else:
-      matriz_diagonal[j, j] = 0
-  return matriz_diagonal
+    Devuelve:
+        matriz_diagonal: matriz D
+    """
+    n = np.shape(matriz_conectividad)[0]
+    matriz_diagonal = np.zeros((n,n))
 
-def normalize(v):
+    c = matriz_conectividad.sum(axis=0)
+
+    for j in range(n):
+        if c[j] != 0:
+            matriz_diagonal[j, j] = 1/c[j]
+        else:
+            matriz_diagonal[j, j] = 0
+    return matriz_diagonal
+
+def normalizar(v):
     norm=np.linalg.norm(v)
     if norm==0:
         norm=np.finfo(v.dtype).eps
@@ -100,7 +119,7 @@ def calcularRanking(M, p):
     R = M @ D
     I = np.eye(npages)
     e = np.ones((npages,))
-    scr = normalize(resolverLU(I - p*R, e))
+    scr = normalizar(resolverLU(I - p*R, e))
     scr = scr/scr.sum(keepdims=1)
     rnk = np.flip(np.argsort(scr)) + 1
     return rnk, scr
@@ -112,7 +131,3 @@ def obtenerMaximoRankingScore(M, p):
     output = np.max(scr)
     
     return output
-
-W = leer_archivo('tests/test_dosestrellas.txt')
-rnk, scr = calcularRanking(W, 0.5)
-print(obtenerMaximoRankingScore(W, 0.5))
