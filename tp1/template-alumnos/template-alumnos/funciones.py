@@ -78,7 +78,7 @@ def resolverLU(A, b):
     Devuelve:
         x: Solución del sistema.
     """
-    P, L, U = scipy.linalg.lu(A)
+    L, U = resolverLU(A)
     y = scipy.linalg.solve_triangular(L,b,lower = True)
     x = scipy.linalg.solve_triangular(U,y)
     return x
