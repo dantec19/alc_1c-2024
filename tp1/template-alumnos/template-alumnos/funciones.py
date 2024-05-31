@@ -56,7 +56,7 @@ def descompLU(A):
         print('Matriz no cuadrada')
         return
 
-    for i in range(m-2):
+    for i in range(m-1):
         pivot = Ac[i,i]
         for j in range(i+1,m):
             coc = -Ac[j,i] / pivot
@@ -78,7 +78,7 @@ def resolverLU(A, b):
     Devuelve:
         x: Solución del sistema.
     """
-    L, U = resolverLU(A)
+    L, U = descompLU(A)
     y = scipy.linalg.solve_triangular(L,b,lower = True)
     x = scipy.linalg.solve_triangular(U,y)
     return x
