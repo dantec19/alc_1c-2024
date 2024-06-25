@@ -171,6 +171,10 @@ plt.show()
 tabla_cl = pd.read_csv('datos/consumidores_libres.csv', delimiter=';')
 
 fechas = list(tabla_cl.columns.values[2:])
+#fechas = list(pd.to_datetime(fechas_str, format='%d/%m/%Y'))
+
+#tabla_cl = tabla_cl.rename(columns=dict(zip(fechas_str,fechas)))
+
 
 # Saco las berenjenas, ya que no están en la tabla nutricional
 tabla_cl = tabla_cl[tabla_cl['PRODUCTOS'] != 'BERENJENAS']
@@ -185,7 +189,75 @@ tabla_nutricional_cl = tabla_nutricional_cl[tabla_nutricional_cl['Alimento'].isi
 
 nutrientes = list(tabla_nutricional_cl.columns.values[1:])
 
-tabla_nutricional_cl = tabla_nutricional_cl.drop(columns=nutrientes[5:])
-
 tabla_nutricional_cl[nutrientes] = tabla_nutricional_cl[nutrientes].div(tabla_nutricional_cl['Cantidad (gr/ml)'], axis=0)
+
+tabla_nutricional_cl = tabla_nutricional_cl.drop(columns=nutrientes[4:])
+
+nutrientes = list(tabla_nutricional_cl.columns.values[2:])
+
+def armar_tabla_nutriente(tabla_cl, tabla_nutricional_cl, nutriente):
+    tabla_nutriente = tabla_cl[['PRODUCTOS'] + fechas].merge(tabla_nutricional_cl[['Alimento', f'{nutriente} (gr)']], left_on='PRODUCTOS', right_on='Alimento')
+    tabla_nutriente = tabla_nutriente.drop(columns=['Alimento'])
+    tabla_nutriente[fechas] = tabla_nutriente[fechas].multiply(tabla_nutriente[f'{nutriente} (gr)'], axis=0)
+    
+    return tabla_nutriente
+
+def armar_recta_regresion(y):
+    cant_puntos = np.shape(y)[0]
+    columna_unos = np.ones((cant_puntos, 1))
+    columna_fechas = np.arange(5).reshape((5, 1))
+    M = np.column_stack((columna_unos, columna_fechas))
+    sdp = M.T @ M
+    b = M.T @ y.reshape((cant_puntos,1))
+    
+    ord_origen, pendiente = np.linalg.solve(sdp, b)
+    return ord_origen[0], pendiente[0]
+    
+def graficar_precio_nutriente_alimento(alimento, nutriente, i):
+    tabla_nutriente = armar_tabla_nutriente(tabla_cl, tabla_nutricional_cl, nutriente)
+    tabla_nutriente_alimento = tabla_nutriente[tabla_nutriente['PRODUCTOS'] == alimento]
+    ax = axes[i]
+
+    ord_origen, pendiente = armar_recta_regresion(tabla_nutriente_alimento[fechas].values.flatten())
+    ax.scatter(fechas, tabla_nutriente_alimento[fechas].values.flatten(), color='red', marker='o')
+    
+    ax.axline((0, ord_origen), slope=pendiente, color='C0', label='by slope')
+    ax.set_title(alimento_cl)
+
+# Grafico cada alimento por separado
+for nutriente in ['HC', 'Proteinas', 'Grasas']:
+    fig, axes = plt.subplots(5, 4, figsize=(20, 15), sharey=True)
+    axes = axes.flatten()
+    i=0
+    for alimento_cl in alimentos_cl:
+        graficar_precio_nutriente_alimento(alimento_cl, nutriente, i)
+        i+=1
+    plt.suptitle(f"Evolución del precio de {nutriente} presente en un gramo de cada alimento de la tabla de consumidores libres", fontsize=20)
+    plt.tight_layout()
+    plt.show()
+    
+# Todos los alimentos juntos
+for nutriente in ['HC', 'Proteinas', 'Grasas']:
+    plt.figure(figsize=(10, 7))
+
+    for alimento_cl in alimentos_cl:
+        tabla_nutriente = armar_tabla_nutriente(tabla_cl, tabla_nutricional_cl, nutriente)
+        tabla_nutriente_alimento = tabla_nutriente[tabla_nutriente['PRODUCTOS'] == alimento_cl]
+        plt.scatter(fechas, tabla_nutriente[fechas].mean().values.flatten(), color='red', marker='o')
+        #plt.scatter(fechas, tabla_nutriente_alimento[fechas].values.flatten(), color='red', marker='o')
+    
+    ord_origen, pendiente = armar_recta_regresion(tabla_nutriente[fechas].mean().values.flatten())
+    plt.axline((0, ord_origen), slope=pendiente, color='C0', label='by slope')
+
+    plt.ylim(0, .8)
+    plt.title(f"Evolución de la media precio de {nutriente} presente en un gramo de los alimentos de la tabla de consumidores libres")
+    plt.xlabel('Fecha')
+    plt.ylabel('Precio($)')
+    plt.tight_layout()
+    plt.show()
+
+
+
+
+    
 
